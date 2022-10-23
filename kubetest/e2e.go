@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -311,7 +310,7 @@ func run(deploy deployer, o options) error {
 	if len(errs) == 0 && o.publish != "" {
 		errs = util.AppendError(errs, control.XMLWrap(&suite, "Publish version", func() error {
 			// Use plaintext version file packaged with kubernetes.tar.gz
-			v, err := ioutil.ReadFile("version")
+			v, err := os.ReadFile("version")
 			if err != nil {
 				return err
 			}
@@ -396,7 +395,7 @@ func listNodes(dp deployer, dump string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(dump, "nodes.yaml"), b, 0644)
+	return os.WriteFile(filepath.Join(dump, "nodes.yaml"), b, 0644)
 }
 
 func listKubemarkNodes(dp deployer, dump string) error {
@@ -412,13 +411,13 @@ func listKubemarkNodes(dp deployer, dump string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(dump, "kubemark_nodes.yaml"), b, 0644)
+	return os.WriteFile(filepath.Join(dump, "kubemark_nodes.yaml"), b, 0644)
 }
 
 func diffResources(before, clusterUp, clusterDown, after []byte, location string) error {
 	if location == "" {
 		var err error
-		location, err = ioutil.TempDir("", "e2e-check-resources")
+		location, err = os.MkdirTemp("", "e2e-check-resources")
 		if err != nil {
 			return fmt.Errorf("Could not create e2e-check-resources temp dir: %s", err)
 		}
@@ -431,21 +430,21 @@ func diffResources(before, clusterUp, clusterDown, after []byte, location string
 	ap := filepath.Join(location, "gcp-resources-after.txt")
 	dp := filepath.Join(location, "gcp-resources-diff.txt")
 
-	if err := ioutil.WriteFile(bp, before, mode); err != nil {
+	if err := os.WriteFile(bp, before, mode); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(up, clusterUp, mode); err != nil {
+	if err := os.WriteFile(up, clusterUp, mode); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(cdp, clusterDown, mode); err != nil {
+	if err := os.WriteFile(cdp, clusterDown, mode); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(ap, after, mode); err != nil {
+	if err := os.WriteFile(ap, after, mode); err != nil {
 		return err
 	}
 
 	stdout, cerr := control.Output(exec.Command("diff", "-sw", "-U0", "-F^\\[.*\\]$", bp, ap))
-	if err := ioutil.WriteFile(dp, stdout, mode); err != nil {
+	if err := os.WriteFile(dp, stdout, mode); err != nil {
 		return err
 	}
 	if cerr == nil { // No diffs

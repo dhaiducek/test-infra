@@ -19,7 +19,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -253,14 +252,14 @@ deck:
 	}
 	for _, tc := range testCases {
 		// save the config
-		spyglassConfigDir, err := ioutil.TempDir("", "spyglassConfig")
+		spyglassConfigDir, err := os.MkdirTemp("", "spyglassConfig")
 		if err != nil {
 			t.Fatalf("fail to make tempdir: %v", err)
 		}
 		defer os.RemoveAll(spyglassConfigDir)
 
 		spyglassConfig := filepath.Join(spyglassConfigDir, "config.yaml")
-		if err := ioutil.WriteFile(spyglassConfig, []byte(tc.spyglassConfig), 0666); err != nil {
+		if err := os.WriteFile(spyglassConfig, []byte(tc.spyglassConfig), 0666); err != nil {
 			t.Fatalf("fail to write spyglass config: %v", err)
 		}
 
@@ -969,7 +968,7 @@ periodics:
 			prowConfigDir := t.TempDir()
 
 			prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-			if err := ioutil.WriteFile(prowConfig, []byte(tc.rawConfig), 0666); err != nil {
+			if err := os.WriteFile(prowConfig, []byte(tc.rawConfig), 0666); err != nil {
 				t.Fatalf("fail to write prow config: %v", err)
 			}
 
@@ -1092,7 +1091,7 @@ gerrit:
 			prowConfigDir := t.TempDir()
 
 			prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-			if err := ioutil.WriteFile(prowConfig, []byte(tc.rawConfig), 0666); err != nil {
+			if err := os.WriteFile(prowConfig, []byte(tc.rawConfig), 0666); err != nil {
 				t.Fatalf("fail to write prow config: %v", err)
 			}
 
@@ -3223,27 +3222,27 @@ postsubmits:
 		t.Run(tc.name, func(t *testing.T) {
 
 			// save the config
-			prowConfigDir, err := ioutil.TempDir("", "prowConfig")
+			prowConfigDir, err := os.MkdirTemp("", "prowConfig")
 			if err != nil {
 				t.Fatalf("fail to make tempdir: %v", err)
 			}
 			defer os.RemoveAll(prowConfigDir)
 
 			prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-			if err := ioutil.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
+			if err := os.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
 				t.Fatalf("fail to write prow config: %v", err)
 			}
 
 			if tc.versionFileContent != "" {
 				versionFile := filepath.Join(prowConfigDir, "VERSION")
-				if err := ioutil.WriteFile(versionFile, []byte(tc.versionFileContent), 0600); err != nil {
+				if err := os.WriteFile(versionFile, []byte(tc.versionFileContent), 0600); err != nil {
 					t.Fatalf("failed to write prow version file: %v", err)
 				}
 			}
 
 			jobConfig := ""
 			if len(tc.jobConfigs) > 0 {
-				jobConfigDir, err := ioutil.TempDir("", "jobConfig")
+				jobConfigDir, err := os.MkdirTemp("", "jobConfig")
 				if err != nil {
 					t.Fatalf("fail to make tempdir: %v", err)
 				}
@@ -3253,7 +3252,7 @@ postsubmits:
 				if len(tc.jobConfigs) == 1 {
 					// a single file
 					jobConfig = filepath.Join(jobConfigDir, "config.yaml")
-					if err := ioutil.WriteFile(jobConfig, []byte(tc.jobConfigs[0]), 0666); err != nil {
+					if err := os.WriteFile(jobConfig, []byte(tc.jobConfigs[0]), 0666); err != nil {
 						t.Fatalf("fail to write job config: %v", err)
 					}
 				} else {
@@ -3261,7 +3260,7 @@ postsubmits:
 					jobConfig = jobConfigDir
 					for idx, config := range tc.jobConfigs {
 						subConfig := filepath.Join(jobConfigDir, fmt.Sprintf("config_%d.yaml", idx))
-						if err := ioutil.WriteFile(subConfig, []byte(config), 0666); err != nil {
+						if err := os.WriteFile(subConfig, []byte(config), 0666); err != nil {
 							t.Fatalf("fail to write job config: %v", err)
 						}
 					}
@@ -3429,7 +3428,7 @@ bar_jobs.yaml`,
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			jobConfigDir, err := ioutil.TempDir("", "jobConfig")
+			jobConfigDir, err := os.MkdirTemp("", "jobConfig")
 			if err != nil {
 				t.Fatalf("fail to make tempdir: %v", err)
 			}
@@ -3442,7 +3441,7 @@ bar_jobs.yaml`,
 			for _, fileMap := range []map[string]string{commonFiles, tc.files} {
 				for name, content := range fileMap {
 					fullName := filepath.Join(jobConfigDir, name)
-					if err := ioutil.WriteFile(fullName, []byte(content), 0666); err != nil {
+					if err := os.WriteFile(fullName, []byte(content), 0666); err != nil {
 						t.Fatalf("fail to write file %s: %v", fullName, err)
 					}
 				}
@@ -3588,7 +3587,7 @@ func TestSecretAgentLoading(t *testing.T) {
 	changedTokenValue := "121f3cb3e7f70feeb35f9204f5a988d7292c7ba0"
 
 	// Creating a temporary directory.
-	secretDir, err := ioutil.TempDir("", "secretDir")
+	secretDir, err := os.MkdirTemp("", "secretDir")
 	if err != nil {
 		t.Fatalf("fail to create a temporary directory: %v", err)
 	}
@@ -3596,13 +3595,13 @@ func TestSecretAgentLoading(t *testing.T) {
 
 	// Create the first temporary secret.
 	firstTempSecret := filepath.Join(secretDir, "firstTempSecret")
-	if err := ioutil.WriteFile(firstTempSecret, []byte(tempTokenValue), 0666); err != nil {
+	if err := os.WriteFile(firstTempSecret, []byte(tempTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
 	// Create the second temporary secret.
 	secondTempSecret := filepath.Join(secretDir, "secondTempSecret")
-	if err := ioutil.WriteFile(secondTempSecret, []byte(tempTokenValue), 0666); err != nil {
+	if err := os.WriteFile(secondTempSecret, []byte(tempTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
@@ -3622,10 +3621,10 @@ func TestSecretAgentLoading(t *testing.T) {
 	}
 
 	// Change the values of the files.
-	if err := ioutil.WriteFile(firstTempSecret, []byte(changedTokenValue), 0666); err != nil {
+	if err := os.WriteFile(firstTempSecret, []byte(changedTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
-	if err := ioutil.WriteFile(secondTempSecret, []byte(changedTokenValue), 0666); err != nil {
+	if err := os.WriteFile(secondTempSecret, []byte(changedTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
@@ -3695,14 +3694,14 @@ github_reporter:
 
 	for _, tc := range testCases {
 		// save the config
-		prowConfigDir, err := ioutil.TempDir("", "prowConfig")
+		prowConfigDir, err := os.MkdirTemp("", "prowConfig")
 		if err != nil {
 			t.Fatalf("fail to make tempdir: %v", err)
 		}
 		defer os.RemoveAll(prowConfigDir)
 
 		prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-		if err := ioutil.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
+		if err := os.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
 			t.Fatalf("fail to write prow config: %v", err)
 		}
 
@@ -4235,14 +4234,14 @@ tide:
 
 	for _, tc := range testCases {
 		// save the config
-		prowConfigDir, err := ioutil.TempDir("", "prowConfig")
+		prowConfigDir, err := os.MkdirTemp("", "prowConfig")
 		if err != nil {
 			t.Fatalf("fail to make tempdir: %v", err)
 		}
 		defer os.RemoveAll(prowConfigDir)
 
 		prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-		if err := ioutil.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
+		if err := os.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
 			t.Fatalf("fail to write prow config: %v", err)
 		}
 
@@ -8054,7 +8053,7 @@ func loadConfigYaml(prowConfigYaml string, t *testing.T, supplementalProwConfigs
 	prowConfigDir := t.TempDir()
 
 	prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-	if err := ioutil.WriteFile(prowConfig, []byte(prowConfigYaml), 0666); err != nil {
+	if err := os.WriteFile(prowConfig, []byte(prowConfigYaml), 0666); err != nil {
 		t.Fatalf("fail to write prow config: %v", err)
 	}
 
@@ -8068,7 +8067,7 @@ func loadConfigYaml(prowConfigYaml string, t *testing.T, supplementalProwConfigs
 
 		// use a random prefix for the file to make sure that the loading correctly loads all supplemental configs with the
 		// right suffix.
-		if err := ioutil.WriteFile(filepath.Join(dir, strconv.Itoa(time.Now().Nanosecond())+"_prowconfig.yaml"), []byte(cfg), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, strconv.Itoa(time.Now().Nanosecond())+"_prowconfig.yaml"), []byte(cfg), 0644); err != nil {
 			t.Fatalf("failed to write supplemental prow config: %v", err)
 		}
 	}

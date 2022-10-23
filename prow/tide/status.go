@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"sort"
 	"strconv"
@@ -40,7 +40,7 @@ import (
 	"k8s.io/test-infra/prow/config"
 	"k8s.io/test-infra/prow/git/v2"
 	"k8s.io/test-infra/prow/github"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 	"k8s.io/test-infra/prow/tide/blockers"
 )
 
@@ -82,7 +82,7 @@ type statusController struct {
 
 	storedState     map[string]storedState
 	storedStateLock sync.Mutex
-	opener          io.Opener
+	opener          prowio.Opener
 	path            string
 
 	// Shared fields with sync controller
@@ -502,9 +502,9 @@ func (sc *statusController) load() {
 		entry.WithError(err).Warn("Cannot open stored state")
 		return
 	}
-	defer io.LogClose(reader)
+	defer prowio.LogClose(reader)
 
-	buf, err := ioutil.ReadAll(reader)
+	buf, err := io.ReadAll(reader)
 	if err != nil {
 		entry.WithError(err).Warn("Cannot read stored state")
 		return
@@ -546,7 +546,7 @@ func (sc *statusController) save(ticker *time.Ticker) {
 		}
 		if _, err = writer.Write(buf); err != nil {
 			entry.WithError(err).Warn("Cannot write state")
-			io.LogClose(writer)
+			prowio.LogClose(writer)
 			continue
 		}
 		if err := writer.Close(); err != nil {

@@ -19,7 +19,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -800,7 +799,7 @@ func TestInRepoConfigClean(t *testing.T) {
 	clonedRepo := casted.cache["org/repo"]
 	dir := clonedRepo.RepoClient.Directory()
 	f := path.Join(dir, "new-file")
-	if err := ioutil.WriteFile(f, []byte("something"), 0644); err != nil {
+	if err := os.WriteFile(f, []byte("something"), 0644); err != nil {
 		t.Fatal(err)
 	}
 

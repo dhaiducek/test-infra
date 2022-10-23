@@ -23,7 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -814,7 +814,9 @@ func DefaultDecorationMapToSliceTesting(m map[string]*prowapi.DecorationConfig) 
 // It sets p.DefaultDecorationConfigs into either the old map
 // format or the new slice format:
 // Old format: map[string]*prowapi.DecorationConfig where the key is org,
-//             org/repo, or "*".
+//
+//	org/repo, or "*".
+//
 // New format: []*DefaultDecorationConfigEntry
 // If the old format is parsed it is converted to the new format, then all
 // filter regexp are compiled.
@@ -1070,9 +1072,9 @@ type Spyglass struct {
 type GCSBrowserPrefixes map[string]string
 
 // GetGCSBrowserPrefix determines the GCS Browser prefix by checking for a config in order of:
-//   1. If org (and optionally repo) is provided resolve the GCSBrowserPrefixesByRepo config.
-//   2. If bucket is provided resolve the GCSBrowserPrefixesByBucket config.
-//   3. If not found in either use the default from GCSBrowserPrefixesByRepo or GCSBrowserPrefixesByBucket if not found.
+//  1. If org (and optionally repo) is provided resolve the GCSBrowserPrefixesByRepo config.
+//  2. If bucket is provided resolve the GCSBrowserPrefixesByBucket config.
+//  3. If not found in either use the default from GCSBrowserPrefixesByRepo or GCSBrowserPrefixesByBucket if not found.
 func (s Spyglass) GetGCSBrowserPrefix(org, repo, bucket string) string {
 	if org != "" {
 		if prefix, ok := s.GCSBrowserPrefixesByRepo[fmt.Sprintf("%s/%s", org, repo)]; ok {
@@ -1184,9 +1186,9 @@ func IsNotAllowedBucketError(err error) bool {
 
 // ValidateStorageBucket validates a storage bucket (unless the `Deck.SkipStoragePathValidation` field is true).
 // The bucket name must be included in any of the following:
-//    1) Any job's `.DecorationConfig.GCSConfiguration.Bucket` (except jobs defined externally via InRepoConfig).
-//    2) `Plank.DefaultDecorationConfigs.GCSConfiguration.Bucket`.
-//    3) `Deck.AdditionalAllowedBuckets`.
+//  1. Any job's `.DecorationConfig.GCSConfiguration.Bucket` (except jobs defined externally via InRepoConfig).
+//  2. `Plank.DefaultDecorationConfigs.GCSConfiguration.Bucket`.
+//  3. `Deck.AdditionalAllowedBuckets`.
 func (c *Config) ValidateStorageBucket(bucketName string) error {
 	if !c.Deck.shouldValidateStorageBuckets() {
 		return nil
@@ -1365,7 +1367,9 @@ func defaultRerunAuthMapToSlice(m map[string]prowapi.RerunAuthConfig) ([]*Defaul
 // Deck.DefaultRerunAuthConfigs for use in finalizing the job config.
 // It parses either d.RerunAuthConfigs or d.DefaultRerunAuthConfigEntries, not both.
 // Old format: map[string]*prowapi.RerunAuthConfig where the key is org,
-//             org/repo, or "*".
+//
+//	org/repo, or "*".
+//
 // New format: []*DefaultRerunAuthConfigEntry
 // If the old format is parsed it is converted to the new format, then all
 // filter regexp are compiled.
@@ -1683,7 +1687,7 @@ func loadConfig(prowConfig, jobConfig string, additionalProwConfigDirs []string,
 
 	versionFilePath := filepath.Join(path.Dir(prowConfig), ConfigVersionFileName)
 	if _, errAccess := os.Stat(versionFilePath); errAccess == nil {
-		content, err := ioutil.ReadFile(versionFilePath)
+		content, err := os.ReadFile(versionFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read versionfile %s: %w", versionFilePath, err)
 		}
@@ -1799,10 +1803,10 @@ func yamlToConfig(path string, nc interface{}, opts ...yaml.JSONOpt) error {
 	return nil
 }
 
-// ReadFileMaybeGZIP wraps ioutil.ReadFile, returning the decompressed contents
+// ReadFileMaybeGZIP wraps os.ReadFile, returning the decompressed contents
 // if the file is gzipped, or otherwise the raw contents.
 func ReadFileMaybeGZIP(path string) ([]byte, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -1816,7 +1820,7 @@ func ReadFileMaybeGZIP(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(gzipReader)
+	return io.ReadAll(gzipReader)
 }
 
 func (c *Config) mergeJobConfig(jc JobConfig) error {
@@ -1838,10 +1842,10 @@ func (c *Config) mergeJobConfig(jc JobConfig) error {
 
 // mergeJobConfigs merges two JobConfig together.
 // It will try to merge:
-//	- Presubmits
-//	- Postsubmits
-// 	- Periodics
-//	- Presets
+//   - Presubmits
+//   - Postsubmits
+//   - Periodics
+//   - Presets
 func mergeJobConfigs(a, b JobConfig) (JobConfig, error) {
 	// Merge everything.
 	// *** Presets ***

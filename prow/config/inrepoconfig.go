@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -173,7 +172,7 @@ func ReadProwYAML(log *logrus.Entry, dir string, strict bool) (*ProwYAML, error)
 					return nil
 				}
 				log.Debugf("Reading YAML file %q", p)
-				bytes, err := ioutil.ReadFile(p)
+				bytes, err := os.ReadFile(p)
 				if err != nil {
 					return err
 				}
@@ -195,7 +194,7 @@ func ReadProwYAML(log *logrus.Entry, dir string, strict bool) (*ProwYAML, error)
 		log.WithField("file", inRepoConfigFileName).Debug("Attempting to get inreconfigfile")
 		prowYAMLFilePath := path.Join(dir, inRepoConfigFileName)
 		if _, err := os.Stat(prowYAMLFilePath); err == nil {
-			bytes, err := ioutil.ReadFile(prowYAMLFilePath)
+			bytes, err := os.ReadFile(prowYAMLFilePath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read %q: %w", prowYAMLDirPath, err)
 			}

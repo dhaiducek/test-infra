@@ -23,7 +23,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"io/ioutil"
+	"io"
 
 	"encoding/json"
 	"encoding/pem"
@@ -39,7 +39,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/test-infra/prow/config"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 	"k8s.io/test-infra/prow/plank"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -54,7 +54,7 @@ const (
 	validatePath                 = "/validate"
 )
 
-//for unit testing purposes
+// for unit testing purposes
 var genCertFunc = genCert
 
 func genCert(expiry int, dnsNames []string) (string, string, string, error) {
@@ -440,7 +440,7 @@ func (wa *webhookAgent) fetchClusters(d time.Duration, ctx context.Context, stat
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
 	cfg := configAgent.Config()
-	opener, err := io.NewOpener(context.Background(), wa.storage.GCSCredentialsFile, wa.storage.S3CredentialsFile)
+	opener, err := prowio.NewOpener(context.Background(), wa.storage.GCSCredentialsFile, wa.storage.S3CredentialsFile)
 	if err != nil {
 		return err
 	}
@@ -453,13 +453,13 @@ func (wa *webhookAgent) fetchClusters(d time.Duration, ctx context.Context, stat
 			if location := cfg.Plank.BuildClusterStatusFile; location != "" {
 				reader, err := opener.Reader(context.Background(), location)
 				if err != nil {
-					if !io.IsNotExist(err) {
+					if !prowio.IsNotExist(err) {
 						return fmt.Errorf("error opening build cluster status file for reading: %w", err)
 					}
 					logrus.Warnf("Build cluster status file location was specified, but could not be found: %v. This is expected when the location is first configured, before plank creates the file.", err)
 				} else {
 					defer reader.Close()
-					b, err := ioutil.ReadAll(reader)
+					b, err := io.ReadAll(reader)
 					if err != nil {
 						return fmt.Errorf("error reading build cluster status file: %w", err)
 					}

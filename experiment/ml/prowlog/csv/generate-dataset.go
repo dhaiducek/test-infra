@@ -17,22 +17,28 @@ limitations under the License.
 // Package main will create a CSV dataset by reading the specified zip file.
 //
 // Zip file is assumed to be created by generate-dataset.go, following this format:
-//   TRAIN/labelA/foo.txt
-//   VALIDATION/labelB/bar.txt
-//   TEST/labelA/whatever.txt
+//
+//	TRAIN/labelA/foo.txt
+//	VALIDATION/labelB/bar.txt
+//	TEST/labelA/whatever.txt
+//
 // aka <partition>/<label>/<name>, or alternatively leaving out the parition:
-//   labelA/foo.txt
-//   labelB/bar.txt
-//   labelA/whatever.txt
+//
+//	labelA/foo.txt
+//	labelB/bar.txt
+//	labelA/whatever.txt
 //
 // The corresponding CSV file rows will look like:
-//   TRAIN,"hello world",labelA
-//   VALIDATION,"contents of bar",labelB
-//   TEST,"more interesting stuff",labelA
+//
+//	TRAIN,"hello world",labelA
+//	VALIDATION,"contents of bar",labelB
+//	TEST,"more interesting stuff",labelA
+//
 // aka <parition>,<content of file>,<label>, possibly leaving the partition column blank:
-//   ,"hello world",labelA
-//   ,"contents of bar",labelB
-//   ,"more interesting stuff",labelA
+//
+//	,"hello world",labelA
+//	,"contents of bar",labelB
+//	,"more interesting stuff",labelA
 package main
 
 import (
@@ -42,7 +48,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -103,7 +108,7 @@ func main() {
 			continue
 		}
 		defer zf.Close()
-		b, err := ioutil.ReadAll(zf)
+		b, err := io.ReadAll(zf)
 		if err != nil {
 			log.Println("Failed to read eample", f.Name, err)
 			continue

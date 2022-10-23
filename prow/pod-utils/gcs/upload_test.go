@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sync"
 	"testing"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
 
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 )
 
 func TestUploadWithRetries(t *testing.T) {
@@ -200,7 +200,7 @@ func Test_openerObjectWriter_Write(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &openerObjectWriter{
-				Opener:  io.NewGCSOpener(fakeGCSClient),
+				Opener:  prowio.NewGCSOpener(fakeGCSClient),
 				Context: context.Background(),
 				Bucket:  fmt.Sprintf("gs://%s", fakeBucket),
 				Dest:    tt.ObjectDest,
@@ -225,7 +225,7 @@ func Test_openerObjectWriter_Write(t *testing.T) {
 				t.Errorf("Got unexpected error reading object %s: %v", tt.ObjectDest, err)
 			}
 
-			gotObjectContent, err := ioutil.ReadAll(reader)
+			gotObjectContent, err := io.ReadAll(reader)
 			if err != nil {
 				t.Errorf("Got unexpected error reading object %s: %v", tt.ObjectDest, err)
 			}

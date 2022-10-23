@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -122,11 +122,12 @@ func (o Options) Run() error {
 // processCloneLog checks if clone operation succeeded or failed for a ref
 // and upload clone logs as build log upon failures.
 // returns: bool - clone status
-//          []Record - containing final SHA on successful clones
-//          error - when unexpected file operation happens
+//
+//	[]Record - containing final SHA on successful clones
+//	error - when unexpected file operation happens
 func processCloneLog(logfile string, uploadTargets map[string]gcs.UploadFunc) (bool, []clone.Record, error) {
 	var cloneRecords []clone.Record
-	data, err := ioutil.ReadFile(logfile)
+	data, err := os.ReadFile(logfile)
 	if err != nil {
 		return true, cloneRecords, fmt.Errorf("could not read clone log: %w", err)
 	}

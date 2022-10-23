@@ -20,7 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -43,7 +43,7 @@ import (
 	configflagutil "k8s.io/test-infra/prow/flagutil/config"
 	pluginsflagutil "k8s.io/test-infra/prow/flagutil/plugins"
 	"k8s.io/test-infra/prow/github"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 	"k8s.io/test-infra/prow/plank"
 	"k8s.io/test-infra/prow/plugins"
 )
@@ -689,14 +689,14 @@ presubmits:
 		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			// Set up config files
-			root, err := ioutil.TempDir("", fmt.Sprintf("TestValidateUnknownFieldsAll-%s_*", tc.name))
+			root, err := os.MkdirTemp("", fmt.Sprintf("TestValidateUnknownFieldsAll-%s_*", tc.name))
 			if err != nil {
 				t.Fatalf("Error creating temp dir: %v.", err)
 			}
 			defer os.RemoveAll(root) // clean up
 
 			prowConfigFile := filepath.Join(root, "config.yaml")
-			if err := ioutil.WriteFile(prowConfigFile, []byte(tc.configContent), 0666); err != nil {
+			if err := os.WriteFile(prowConfigFile, []byte(tc.configContent), 0666); err != nil {
 				t.Fatalf("Error writing config.yaml file: %v.", err)
 			}
 			var jobConfigDir string
@@ -707,7 +707,7 @@ presubmits:
 				}
 				for file, content := range tc.jobConfigContent {
 					file = filepath.Join(jobConfigDir, file)
-					if err := ioutil.WriteFile(file, []byte(content), 0666); err != nil {
+					if err := os.WriteFile(file, []byte(content), 0666); err != nil {
 						t.Fatalf("Error writing %q file: %v.", file, err)
 					}
 				}
@@ -718,7 +718,7 @@ presubmits:
 				if tc.expectedErr {
 					t.Error("Expected an error, but did not receive one.")
 				} else {
-					content, _ := ioutil.ReadFile(prowConfigFile)
+					content, _ := os.ReadFile(prowConfigFile)
 					t.Log(string(content))
 					t.Errorf("Unexpected error: %v.", err)
 				}
@@ -1595,7 +1595,7 @@ func TestValidateInRepoConfig(t *testing.T) {
 
 		if tc.prowYAMLData != nil {
 			fileName := filepath.Join(t.TempDir(), ".prow.yaml")
-			if err := ioutil.WriteFile(fileName, tc.prowYAMLData, 0666); err != nil {
+			if err := os.WriteFile(fileName, tc.prowYAMLData, 0666); err != nil {
 				t.Fatalf("failed to write to tempfile: %v", err)
 			}
 
@@ -1603,7 +1603,7 @@ func TestValidateInRepoConfig(t *testing.T) {
 		}
 
 		// Need an empty file to load the config from so we go through its defaulting
-		tempConfig, err := ioutil.TempFile("", "prow-test")
+		tempConfig, err := os.CreateTemp("", "prow-test")
 		if err != nil {
 			t.Fatalf("failed to get tempfile: %v", err)
 		}
@@ -1737,7 +1737,7 @@ func TestValidate(t *testing.T) {
 }
 
 type fakeOpener struct {
-	io.Opener
+	prowio.Opener
 	content   string
 	readError error
 }
@@ -1746,7 +1746,7 @@ func (fo *fakeOpener) Reader(ctx context.Context, path string) (io.ReadCloser, e
 	if fo.readError != nil {
 		return nil, fo.readError
 	}
-	return ioutil.NopCloser(strings.NewReader(fo.content)), nil
+	return io.NopCloser(strings.NewReader(fo.content)), nil
 }
 
 func (fo *fakeOpener) Close() error {

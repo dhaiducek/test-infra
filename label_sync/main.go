@@ -22,7 +22,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -353,7 +352,7 @@ func LoadConfig(path string, orgs string) (*Configuration, error) {
 		return nil, errors.New("empty path")
 	}
 	var c Configuration
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -836,10 +835,13 @@ func main() {
 }
 
 // parseCommaDelimitedList parses values in the format:
-//   org/repo,org2/repo2,org/repo3
+//
+//	org/repo,org2/repo2,org/repo3
+//
 // into a mapping of org to repos, i.e.:
-//   org:  repo, repo3
-//   org2: repo2
+//
+//	org:  repo, repo3
+//	org2: repo2
 func parseCommaDelimitedList(list string) (map[string][]string, error) {
 	mapping := map[string][]string{}
 	for _, r := range strings.Split(list, ",") {

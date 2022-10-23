@@ -21,19 +21,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/test-infra/prow/config"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 )
 
 // opener has methods to read and write paths
 type opener interface {
-	Reader(ctx context.Context, path string) (io.ReadCloser, error)
-	Writer(ctx context.Context, path string, opts ...io.WriterOptions) (io.WriteCloser, error)
+	Reader(ctx context.Context, path string) (prowio.ReadCloser, error)
+	Writer(ctx context.Context, path string, opts ...prowio.WriterOptions) (prowio.WriteCloser, error)
 }
 
 type SyncTime struct {
@@ -100,14 +100,14 @@ func (st *SyncTime) update(hostProjects map[string]map[string]*config.GerritQuer
 
 func (st *SyncTime) currentState() (LastSyncState, error) {
 	r, err := st.opener.Reader(st.ctx, st.path)
-	if io.IsNotExist(err) {
+	if prowio.IsNotExist(err) {
 		logrus.Warnf("lastSyncFallback not found at %q", st.path)
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("open: %w", err)
 	}
-	defer io.LogClose(r)
-	buf, err := ioutil.ReadAll(r)
+	defer prowio.LogClose(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
 	}
@@ -159,7 +159,7 @@ func (st *SyncTime) Update(newState LastSyncState) error {
 		return fmt.Errorf("marshall state: %w", err)
 	}
 	if _, err := fmt.Fprint(w, string(stateBytes)); err != nil {
-		io.LogClose(w)
+		prowio.LogClose(w)
 		return fmt.Errorf("write %q: %w", st.path, err)
 	}
 	if err := w.Close(); err != nil {

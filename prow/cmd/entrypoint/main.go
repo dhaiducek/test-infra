@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -30,9 +29,9 @@ import (
 
 // copy copies entrypoint binary from source to destination. This is because
 // entrypoint image operates in two different modes:
-// 1) entrypoint container: copy the binary to shared mount drive `/tools`
-// 2) test container(s): use `/tools/entrypoint` as entrypoint, for collecting
-//    logs and artifacts.
+//  1. entrypoint container: copy the binary to shared mount drive `/tools`
+//  2. test container(s): use `/tools/entrypoint` as entrypoint, for collecting
+//     logs and artifacts.
 func copy(src, dst string) error {
 	logrus.Infof("src is %s", src)
 	// Get file info so that the mode can be used for copying
@@ -40,7 +39,7 @@ func copy(src, dst string) error {
 	if err != nil {
 		return fmt.Errorf("read info '%s': %w", src, err)
 	}
-	body, err := ioutil.ReadFile(src)
+	body, err := os.ReadFile(src)
 	if err != nil {
 		return fmt.Errorf("read file '%s': %w", src, err)
 	}
@@ -49,7 +48,7 @@ func copy(src, dst string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return fmt.Errorf("create dir '%s': %w", dstDir, err)
 	}
-	if err := ioutil.WriteFile(dst, body, info.Mode()); err != nil {
+	if err := os.WriteFile(dst, body, info.Mode()); err != nil {
 		return fmt.Errorf("write file '%s': %w", dst, err)
 	}
 	return nil

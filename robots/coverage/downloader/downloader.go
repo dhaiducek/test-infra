@@ -22,7 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path"
 	"sort"
 	"strconv"
@@ -34,7 +34,7 @@ import (
 	prowv1 "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
-//listGcsObjects get the slice of gcs objects under a given path
+// listGcsObjects get the slice of gcs objects under a given path
 func listGcsObjects(ctx context.Context, client *storage.Client, bucketName, prefix, delim string) (
 	[]string, error) {
 
@@ -68,7 +68,7 @@ func readGcsObject(ctx context.Context, client *storage.Client, bucket, object s
 	if err != nil {
 		return nil, fmt.Errorf("cannot read object '%s': %w", object, err)
 	}
-	return ioutil.ReadAll(reader)
+	return io.ReadAll(reader)
 }
 
 // FindBaseProfile finds the coverage profile file from the latest healthy build

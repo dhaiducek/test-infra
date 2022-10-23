@@ -26,7 +26,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -66,7 +66,7 @@ import (
 	prowgithub "k8s.io/test-infra/prow/github"
 	"k8s.io/test-infra/prow/githuboauth"
 	"k8s.io/test-infra/prow/interrupts"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 	"k8s.io/test-infra/prow/kube"
 	"k8s.io/test-infra/prow/logrusutil"
 	"k8s.io/test-infra/prow/metrics"
@@ -336,7 +336,7 @@ func main() {
 		var fjc fakePjListingClientWrapper
 		var pjs prowapi.ProwJobList
 		staticPjsPath := path.Join(o.pregeneratedData, "prowjobs.json")
-		content, err := ioutil.ReadFile(staticPjsPath)
+		content, err := os.ReadFile(staticPjsPath)
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to read jobs from prowjobs.json.")
 		}
@@ -524,7 +524,7 @@ func (c *podLogClient) GetLogs(name, container string) ([]byte, error) {
 		return nil, err
 	}
 	defer reader.Close()
-	return ioutil.ReadAll(reader)
+	return io.ReadAll(reader)
 }
 
 type pjListingClientWrapper struct {
@@ -680,7 +680,7 @@ func prodOnlyMain(cfg config.Getter, pluginAgent *plugins.ConfigAgent, authCfgGe
 
 func initSpyglass(cfg config.Getter, o options, mux *http.ServeMux, ja *jobs.JobAgent, gitHubClient deckGitHubClient, gitClient git.ClientFactory) {
 	ctx := context.TODO()
-	opener, err := io.NewOpener(ctx, o.storage.GCSCredentialsFile, o.storage.S3CredentialsFile)
+	opener, err := prowio.NewOpener(ctx, o.storage.GCSCredentialsFile, o.storage.S3CredentialsFile)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating opener")
 	}
@@ -728,7 +728,7 @@ func initLocalLensHandler(cfg config.Getter, o options, sg *spyglass.Spyglass) e
 }
 
 func loadToken(file string) ([]byte, error) {
-	raw, err := ioutil.ReadFile(file)
+	raw, err := os.ReadFile(file)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -884,7 +884,7 @@ func handleBadge(ja *jobs.JobAgent) http.HandlerFunc {
 // Example:
 // - /job-history/kubernetes-jenkins/logs/ci-kubernetes-e2e-prow-canary
 // - /job-history/gs/kubernetes-jenkins/logs/ci-kubernetes-e2e-prow-canary
-func handleJobHistory(o options, cfg config.Getter, opener io.Opener, log *logrus.Entry) http.HandlerFunc {
+func handleJobHistory(o options, cfg config.Getter, opener prowio.Opener, log *logrus.Entry) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setHeadersNoCaching(w)
 		tmpl, err := getJobHistory(r.Context(), r.URL, cfg, opener)
@@ -906,7 +906,7 @@ func handleJobHistory(o options, cfg config.Getter, opener io.Opener, log *logru
 // The url must look like this:
 //
 // /pr-history?org=<org>&repo=<repo>&pr=<pr number>
-func handlePRHistory(o options, cfg config.Getter, opener io.Opener, gitHubClient deckGitHubClient, gitClient git.ClientFactory, log *logrus.Entry) http.HandlerFunc {
+func handlePRHistory(o options, cfg config.Getter, opener prowio.Opener, gitHubClient deckGitHubClient, gitClient git.ClientFactory, log *logrus.Entry) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setHeadersNoCaching(w)
 		tmpl, err := getPRHistory(r.Context(), r.URL, cfg(), opener, gitHubClient, gitClient, o.github.Host)
@@ -1246,7 +1246,7 @@ func handleRemoteLens(lens config.LensFileConfig, w http.ResponseWriter, r *http
 
 	var data string
 	if requestType != spyglassapi.RequestActionInitial {
-		dataBytes, err := ioutil.ReadAll(r.Body)
+		dataBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to read body: %v", err), http.StatusInternalServerError)
 			return
@@ -1273,7 +1273,7 @@ func handleRemoteLens(lens config.LensFileConfig, w http.ResponseWriter, r *http
 		Director: func(r *http.Request) {
 			r.URL = lens.RemoteConfig.ParsedEndpoint
 			r.ContentLength = int64(len(serializedRequest))
-			r.Body = ioutil.NopCloser(bytes.NewBuffer(serializedRequest))
+			r.Body = io.NopCloser(bytes.NewBuffer(serializedRequest))
 		},
 	}).ServeHTTP(w, r)
 }

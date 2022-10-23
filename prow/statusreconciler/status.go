@@ -18,7 +18,7 @@ package statusreconciler
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -26,7 +26,7 @@ import (
 
 	"k8s.io/test-infra/prow/config"
 	configflagutil "k8s.io/test-infra/prow/flagutil/config"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 )
 
 type storedState struct {
@@ -41,7 +41,7 @@ type statusClient interface {
 // opener has methods to read and write paths
 type opener interface {
 	Reader(ctx context.Context, path string) (io.ReadCloser, error)
-	Writer(ctx context.Context, path string, opts ...io.WriterOptions) (io.WriteCloser, error)
+	Writer(ctx context.Context, path string, opts ...prowio.WriterOptions) (io.WriteCloser, error)
 }
 
 type statusController struct {
@@ -90,7 +90,7 @@ func (s *statusController) Save() error {
 	}
 	if _, err = writer.Write(buf); err != nil {
 		entry.WithError(err).Warn("Cannot write state")
-		io.LogClose(writer)
+		prowio.LogClose(writer)
 		return err
 	}
 	if err := writer.Close(); err != nil {
@@ -114,9 +114,9 @@ func (s *statusController) loadState() (storedState, error) {
 		entry.WithError(err).Warn("Cannot open stored state")
 		return state, err
 	}
-	defer io.LogClose(reader)
+	defer prowio.LogClose(reader)
 
-	buf, err := ioutil.ReadAll(reader)
+	buf, err := io.ReadAll(reader)
 	if err != nil {
 		entry.WithError(err).Warn("Cannot read stored state")
 		return state, err

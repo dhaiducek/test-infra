@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -118,7 +117,7 @@ RU5EIFBSSVZBVEUgS0VZLS0tLS1cbgo=`)
 		t.Run(tt.name, func(t *testing.T) {
 			var gcsCredentialsFile string
 			if tt.fakeCreds != "" {
-				fp, err := ioutil.TempFile("", "fake-creds")
+				fp, err := os.CreateTemp("", "fake-creds")
 				if err != nil {
 					t.Fatalf("Failed to create fake creds: %v", err)
 				}

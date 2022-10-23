@@ -23,8 +23,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -47,7 +47,7 @@ import (
 	pluginsflagutil "k8s.io/test-infra/prow/flagutil/plugins"
 	"k8s.io/test-infra/prow/github"
 	_ "k8s.io/test-infra/prow/hook/plugin-imports"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 	"k8s.io/test-infra/prow/kube"
 	"k8s.io/test-infra/prow/labels"
 	"k8s.io/test-infra/prow/logrusutil"
@@ -369,7 +369,7 @@ func validate(o options) error {
 			errs = append(errs, err)
 		}
 	} else if unknownEnabled {
-		cfgBytes, err := ioutil.ReadFile(o.config.ConfigPath)
+		cfgBytes, err := os.ReadFile(o.config.ConfigPath)
 		if err != nil {
 			return fmt.Errorf("error reading Prow config for validation: %w", err)
 		}
@@ -378,7 +378,7 @@ func validate(o options) error {
 		}
 	}
 	if pcfg != nil && (unknownEnabled || unknownAllEnabled) {
-		pcfgBytes, err := ioutil.ReadFile(o.pluginsConfig.PluginConfigPath)
+		pcfgBytes, err := os.ReadFile(o.pluginsConfig.PluginConfigPath)
 		if err != nil {
 			return fmt.Errorf("error reading Prow plugin config for validation: %w", err)
 		}
@@ -397,7 +397,7 @@ func validate(o options) error {
 		}
 	}
 	if o.warningEnabled(validateClusterFieldWarning) {
-		opener, err := io.NewOpener(context.Background(), o.storage.GCSCredentialsFile, o.storage.S3CredentialsFile)
+		opener, err := prowio.NewOpener(context.Background(), o.storage.GCSCredentialsFile, o.storage.S3CredentialsFile)
 		if err != nil {
 			logrus.WithError(err).Fatal("Error creating opener")
 		}
@@ -862,6 +862,7 @@ func enabledOrgReposForPlugin(c *plugins.Configuration, plugin string, external 
 // Specifically:
 //   - every item in the tide subset must also be in the plugins subset
 //   - every item in the plugins subset that is in the tide superset must also be in the tide subset
+//
 // For example:
 //   - if org/repo is configured in tide to require lgtm, it must have the lgtm plugin enabled
 //   - if org/repo is configured in tide, the tide configuration must require the same set of
@@ -1196,18 +1197,18 @@ func validateJobCluster(job config.JobBase, statuses map[string]plank.ClusterSta
 	return nil
 }
 
-func validateCluster(cfg *config.Config, opener io.Opener) error {
+func validateCluster(cfg *config.Config, opener prowio.Opener) error {
 	var statuses map[string]plank.ClusterStatus
 	if location := cfg.Plank.BuildClusterStatusFile; location != "" {
 		reader, err := opener.Reader(context.Background(), location)
 		if err != nil {
-			if !io.IsNotExist(err) {
+			if !prowio.IsNotExist(err) {
 				return fmt.Errorf("error opening build cluster status file for reading: %w", err)
 			}
 			logrus.Warnf("Build cluster status file location was specified, but could not be found: %v. This is expected when the location is first configured, before plank creates the file.", err)
 		} else {
 			defer reader.Close()
-			b, err := ioutil.ReadAll(reader)
+			b, err := io.ReadAll(reader)
 			if err != nil {
 				return fmt.Errorf("error reading build cluster status file: %w", err)
 			}

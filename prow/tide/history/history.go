@@ -22,7 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"sync"
@@ -31,7 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
-	"k8s.io/test-infra/prow/io"
+	prowio "k8s.io/test-infra/prow/io"
 )
 
 // Mock out time for unit testing.
@@ -51,20 +51,20 @@ type History struct {
 
 // opener has methods to read and write paths
 type opener interface {
-	Reader(ctx context.Context, path string) (io.ReadCloser, error)
-	Writer(ctx context.Context, path string, opts ...io.WriterOptions) (io.WriteCloser, error)
+	Reader(ctx context.Context, path string) (prowio.ReadCloser, error)
+	Writer(ctx context.Context, path string, opts ...prowio.WriterOptions) (prowio.WriteCloser, error)
 }
 
 func readHistory(maxRecordsPerKey int, opener opener, path string) (map[string]*recordLog, error) {
 	reader, err := opener.Reader(context.Background(), path)
-	if io.IsNotExist(err) { // No history exists yet. This is not an error.
+	if prowio.IsNotExist(err) { // No history exists yet. This is not an error.
 		return map[string]*recordLog{}, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("open: %w", err)
 	}
-	defer io.LogClose(reader)
-	raw, err := ioutil.ReadAll(reader)
+	defer prowio.LogClose(reader)
+	raw, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
 	}
@@ -103,7 +103,7 @@ func writeHistory(opener opener, path string, hist map[string][]*Record) error {
 		return fmt.Errorf("marshal: %w", err)
 	}
 	if _, err := fmt.Fprint(writer, string(b)); err != nil {
-		io.LogClose(writer)
+		prowio.LogClose(writer)
 		return fmt.Errorf("write: %w", err)
 	}
 	if err := writer.Close(); err != nil {
@@ -123,7 +123,7 @@ type Record struct {
 }
 
 // New creates a new History struct with the specificed recordLog size limit.
-func New(maxRecordsPerKey int, opener io.Opener, path string) (*History, error) {
+func New(maxRecordsPerKey int, opener prowio.Opener, path string) (*History, error) {
 	hist := &History{
 		logs:         map[string]*recordLog{},
 		logSizeLimit: maxRecordsPerKey,

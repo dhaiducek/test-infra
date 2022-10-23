@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -101,7 +100,7 @@ func NewOpener(ctx context.Context, gcsCredentialsFile, s3CredentialsFile string
 	}
 	var s3Credentials []byte
 	if s3CredentialsFile != "" {
-		s3Credentials, err = ioutil.ReadFile(s3CredentialsFile)
+		s3Credentials, err = os.ReadFile(s3CredentialsFile)
 		if err != nil {
 			return nil, err
 		}

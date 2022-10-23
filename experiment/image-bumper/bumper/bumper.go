@@ -19,9 +19,9 @@ package bumper
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -68,11 +68,11 @@ var commitRegexp = regexp.MustCompile(`^g?([\da-f]+)|(.+?)??(?:-(\d+)-g([\da-f]+
 
 // DeconstructCommit separates a git describe commit into its parts.
 
-//
 // Examples:
-//  v0.0.30-14-gdeadbeef => (v0.0.30 14 deadbeef)
-//  v0.0.30 => (v0.0.30 0 "")
-//  deadbeef => ("", 0, deadbeef)
+//
+//	v0.0.30-14-gdeadbeef => (v0.0.30 14 deadbeef)
+//	v0.0.30 => (v0.0.30 0 "")
+//	deadbeef => ("", 0, deadbeef)
 //
 // See man git describe.
 func DeconstructCommit(commit string) (string, int, string) {
@@ -262,14 +262,14 @@ func updateAllTags(tagPicker func(host, image, tag string) (string, error), cont
 // UpdateFile updates a file in place.
 func (cli *Client) UpdateFile(tagPicker func(imageHost, imageName, currentTag string) (string, error),
 	path string, imageFilter *regexp.Regexp) error {
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", path, err)
 	}
 
 	newContent := updateAllTags(tagPicker, content, imageFilter)
 
-	if err := ioutil.WriteFile(path, newContent, 0644); err != nil {
+	if err := os.WriteFile(path, newContent, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", path, err)
 	}
 	return nil
